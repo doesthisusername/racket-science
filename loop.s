@@ -2,6 +2,8 @@
 replay_path:    .string         "/dev_hdd0/game/NPEA00385/USRDIR/replay.rtas"
 
 entry:
+    cmpwi   r28, 4
+    bge     exit
     lis     r4, 0xB0
     lwz     r5, -0x04(r4)
     cmpwi   r5, 0
