@@ -1,57 +1,100 @@
-# states: 0 = none; 1 = playing; 2 = recording
-replay_path:    .string     "/dev_hdd0/game/NPEA00385/USRDIR/replay.rtas"
+# states: 0 = STATE_NONE; 1 = STATE_REC; 2 = STATE_PLAY; 3 = STATE_WAIT_REC; 4 = STATE_WAIT_PLAY
+replay_path:    .string         "/dev_hdd0/game/NPEA00385/USRDIR/replay.rtas"
 
-cmpwi   r28, 4              # check if inputs were actually updated
-bge     exit
-li      r3, 0xA0            # input buttons
-lis     r5, 0xB0            # saved inputs
-lis     r7, 0xA1            # current_time@h
-lwz     r8, -0x04(r5)       # load tas state
-lwzx    r4, r31, r3         # load buttons
-andi.   r6, r4, 9           # BTN_L2 | BTN_R1
-cmpwi   cr1, r8, 2          # in recording state?
-cmpwi   r6, 9
-crand   2, 6, 2             # recording && (buttons & (BTN_L2 | BTN_R1) == 9)
-beq     stop                # close file
-andi.   r4, r4, 3           # BTN_L2 | BTN_R2
-cmpwi   r4, 3
-lwz     r3, -0x10(r5)       # load fd
-cmpwi   cr2, r3, 0          # is fd null?
-cror    10, 6, 10           # state != 2 || fd != 0
-bne     cr2, run            # skip file open if fd already not null or if not recording
-lis     r3, 0x4F
-addi    r3, r3, 0x63C0      # replay_path
-li      r4, 0x42            # oflags (O_CREAT | O_RDWR)
-addi    r5, r5, -0x10       # fd
-li      r6, 0
-li      r7, 0
-bla     0x64F204            # _sys_fs_cellFsOpen
-ld      r2, 0x28(r1)        # restore r2
+entry:
+    lis     r4, 0xB0
+    lwz     r5, -0x04(r4)
+    cmpwi   r5, 0
+    beq     state_none
+    cmpwi   r5, 1
+    beq     state_rec
+    cmpwi   r5, 2
+    beq     state_play
+    cmpwi   r5, 3
+    beq     cond_activate
+    cmpwi   r5, 4
+    beq     cond_activate
+    b       exit
 
-run:
-lis     r5, 0xB0
-lwz     r3, -0x10(r5)
-cror    2, 6, 2             # either condition true
-cmpwi   cr1, r3, 0          # is fd null?
-crand   2, 5, 2             # (recording || buttons & (BTN_L2 | BTN_R2) == 3) && (fd > 0)
-bne     exit
-li      r4, 2               # recording state
-stw     r4, -0x04(r5)       # set state to recording state
-mr      r4, r31             # buf
-li      r5, 0x100           # size
-li      r6, 0               # written
-bla     0x6500A4            # _sys_fs_cellFsWrite
-ld      r2, 0x28(r1)        # restore r2
-b       exit
+state_none:
+    lwz     r6, 0xA0(r31)
+    andi.   r7, r6, 9
+    cmpwi   r7, 9
+    beq     add_wait_rec
+    andi.   r7, r6, 3
+    cmpwi   r7, 3
+    beq     add_wait_play
+    b       exit
 
-stop:
-lwz     r3, -0x10(r5)       # load fd
-bla     0x64F1C4            # _sys_fs_cellFsClose
-ld      r2, 0x28(r1)        # restore r2
-li      r3, 0              
-stw     r3, -0x10(r5)       # fd is now null
-stw     r3, -0x04(r5)       # state is now none
+add_wait_rec:
+    li      r7, 3
+    stw     r7, -0x04(r4)
+    b       exit
 
-exit:     
-ld      r0, 0xA0(r1)        # original
-ba      0x11E3A4            # branch back to the end of update_inputs
+add_wait_play:
+    li      r7, 4
+    stw     r7, -0x04(r4)
+    b       exit
+
+cond_activate:
+    lis     r6, 0xA1
+    lwz     r6, 0x0710(r6)
+    cmpwi   r6, 1
+    ble     exit
+    lwz     r8, -0x08(r4)
+    cmpwi   r8, 1
+    bne     exit
+    addi    r7, r5, -2
+    stw     r7, -0x04(r4)
+    lis     r3, 0x4F
+    addi    r3, r3, 0x63C0      # replay_path
+    addi    r5, r4, -0x10       # fd
+    li      r4, 0x42            # oflags (O_CREAT | O_RDWR)
+    li      r6, 0
+    li      r7, 0
+    bla     0x64F204            # _sys_fs_cellFsOpen
+    ld      r2, 0x28(r1)        # restore r2
+    b       exit
+
+state_rec:
+    lis     r6, 0xA1
+    lwz     r6, 0x0710(r6)
+    lwz     r7, -0x08(r4)
+    cmpw    r6, r7
+    blt     close
+    lwz     r3, -0x10(r4)       # fd
+    li      r5, 0x564           # size
+    mr      r4, r31             # buf
+    li      r6, 0               # written
+    bla     0x6500A4            # _sys_fs_cellFsWrite
+    ld      r2, 0x28(r1)        # restore r2
+    b       exit
+
+state_play:
+    lis     r6, 0xA1
+    lwz     r6, 0x0710(r6)
+    lwz     r7, -0x08(r4)
+    cmpw    r6, r7
+    blt     close
+    lwz     r3, -0x10(r4)       # fd
+    li      r5, 0x564           # size
+    mr      r4, r31             # buf
+    li      r6, 0               # written
+    bla     0x64F1E4            # _sys_fs_cellFsRead
+    ld      r2, 0x28(r1)        # restore r2
+    b       exit
+
+close:
+    lwz     r3, -0x10(r4)       # load fd
+    bla     0x64F1C4            # _sys_fs_cellFsClose
+    ld      r2, 0x28(r1)        # restore r2
+    li      r3, 0               
+    stw     r3, -0x04(r4)       # state is now STATE_NONE
+
+exit:
+    lis     r4, 0xB0
+    lis     r6, 0xA1
+    lwz     r6, 0x0710(r6)
+    stw     r6, -0x08(r4)
+    ld      r0, 0xA0(r1)
+    ba      0x11E3A4

@@ -1,13 +1,14 @@
 # racket science
 WIP basic TAS tools for NPEA00385 (Ratchet & Clank) in PPC64 assembly, for fun.
 
-Including messy assembly.
+Including messy assembly. The C is just for helping me get an overview of my code - it is never compiled.
 
 # Info
 ## Capabilities
-- Record input data to `/dev_hdd0/game/NPEA00385/USRDIR/replay.rtas`
-- Start recording with L2+R2; end it with L2+R1
-- Easy crashes
+- Record/replay input data to/from `/dev_hdd0/game/NPEA00385/USRDIR/replay.rtas`
+- Prime for recording by pressing L2+R1, then it will record from the next planet load, and end on the next one after that
+- Prime for replaying by pressing L2+R2, then it will replay from the next planet load, and end on the next one after that
+- Crash when ending recording or playback
 
 ## How to make
 Need a way to run `powerpc64-linux-gnu-as` and `powerpc64-linux-gnu-ld`. I use WSL (`sudo apt install binutils-powerpc64-linux-gnu`).
