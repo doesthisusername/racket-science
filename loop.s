@@ -20,10 +20,10 @@ entry:
 
 state_none:
     lwz     r6, 0xA0(r31)
-    andi.   r7, r6, 9
+    andi.   r7, r6, 9           # L2, R1
     cmpwi   r7, 9
     beq     add_wait_rec
-    andi.   r7, r6, 3
+    andi.   r7, r6, 3           # L2, R2
     cmpwi   r7, 3
     beq     add_wait_play
     b       exit
@@ -55,7 +55,7 @@ cond_activate:
     ld      r2, 0x28(r1)        # restore r2
 skip_time:
     lis     r4, 0x4F
-    mr      r5, r3              # ...
+    mr      r5, r3              # va arg
     lis     r3, 0xB0
     addi    r4, r4, 0x63C0      # format
     addi    r3, r3, -0x60       # dst
@@ -72,9 +72,13 @@ skip_time:
 
 state_rec:
     lis     r6, 0xA1
+    lwz     r8, 0xA0(r31)
+    andi.   r8, r8, 0x601       # L2, L3, R3
+    cmpwi   cr1, r8, 0x601
     lwz     r6, 0x0710(r6)
     lwz     r7, -0x08(r4)
     cmpw    r6, r7
+    cror    0, 0, 6
     blt     close
     lwz     r3, -0x10(r4)       # fd
     li      r5, 0x564           # size
@@ -86,9 +90,13 @@ state_rec:
 
 state_play:
     lis     r6, 0xA1
+    lwz     r8, 0xA0(r31)
+    andi.   r8, r8, 0x601       # L2, L3, R3
+    cmpwi   cr1, r8, 0x601
     lwz     r6, 0x0710(r6)
     lwz     r7, -0x08(r4)
     cmpw    r6, r7
+    cror    0, 0, 6
     blt     close
     lwz     r3, -0x10(r4)       # fd
     li      r5, 0x564           # size
@@ -104,12 +112,16 @@ close:
     ld      r2, 0x28(r1)        # restore r2
     lis     r4, 0xB0
     lwz     r5, -0x04(r4)
-    li      r3, 3
+    lwz     r6, 0xA0(r31)
+    andi.   r6, r6, 0x601       # L2, L3, R3
+    cmpwi   cr1, r6, 0x601
+    li      r3, 3               # STATE_WAIT_REC
     cmpwi   r5, 1
+    crandc  2, 2, 6
     beq     skip_rec
-    li      r3, 0
+    li      r3, 0               # STATE_NONE
 skip_rec:
-    stw     r3, -0x04(r4)       # state is now STATE_NONE
+    stw     r3, -0x04(r4)       # set state
 
 exit:
     lis     r4, 0xB0

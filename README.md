@@ -5,10 +5,12 @@ Including messy assembly. The C is just for helping me get an overview of my cod
 
 # Info
 ## Capabilities
-- Record/replay input data to/from `/dev_hdd0/game/NPEA00385/USRDIR/replay.rtas`
-- Prime for recording by pressing L2+R1, then it will record from the next planet load, and end on the next one after that
-- Prime for replaying by pressing L2+R2, then it will replay from the next planet load, and end on the next one after that
-- Crash when ending recording or playback
+- Record input data to `/dev_hdd0/game/NPEA00385/USRDIR/`
+- Replay input data from `dev_hdd0/game/NPEA00385/USRDIR/replay0.rtas`
+- Prime for recording by pressing L2+R1, then it will continuously record, splitting each load into a different file
+- Prime for replaying by pressing L2+R2, then it will replay from the next load, and end on the next one after that
+- End recording/replaying by pressing L2+L3+R3
+- Not as many crashes as before!
 
 ## How to make
 Need a way to run `powerpc64-linux-gnu-as` and `powerpc64-linux-gnu-ld`. I use WSL (`sudo apt install binutils-powerpc64-linux-gnu`).

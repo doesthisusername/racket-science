@@ -7,9 +7,12 @@
 #define BTN_L2 1
 #define BTN_R2 2
 #define BTN_R1 8
+#define BTN_L3 0x200
+#define BTN_R3 0x400
 
 #define REC_COMBO (BTN_L2 | BTN_R1)
 #define PLAY_COMBO (BTN_L2 | BTN_R2)
+#define STOP_COMBO (BTN_L2 | BTN_L3 | BTN_R3)
 
 #define REPLAY_PATH ((const char*)0x4F63C0)
 #define INPUTS ((unsigned int*)0x964A40)
@@ -48,16 +51,17 @@ void dummy() {
             }
             break;
         case STATE_REC:
-            if(*FRAME < *OLDFRAME) {
+            if(*FRAME < *OLDFRAME || *BUTTONS & STOP_COMBO == STOP_COMBO) {
                 CLOSE(*FD);
-                *STATE = STATE_WAIT_REC;
+                if(*BUTTONS & STOP_COMBO == STOP_COMBO) *STATE = STATE_NONE;
+                else *STATE = STATE_WAIT_REC;
             }
             else {
                 WRITE(*FD, INPUTS, 0x564, 0);
             }
             break;
         case STATE_PLAY:
-            if(*FRAME < *OLDFRAME) {
+            if(*FRAME < *OLDFRAME || *BUTTONS & STOP_COMBO == STOP_COMBO) {
                 CLOSE(*FD);
                 *STATE = STATE_NONE;
             }
