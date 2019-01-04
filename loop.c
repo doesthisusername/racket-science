@@ -15,10 +15,13 @@
 #define INPUTS ((unsigned int*)0x964A40)
 #define BUTTONS ((unsigned int*)0x964AE0)
 #define FRAME ((unsigned int*)0xA10710)
+#define FORMATTED_PATH ((char*)0xAFFFA0)
 #define FD ((unsigned int*)0xAFFFF0)
 #define OLDFRAME ((unsigned int*)0xAFFFF8)
 #define STATE ((unsigned int*)0xAFFFFC)
 
+#define SPRINTF ((int (*)(char*, const char*, ...))0x5CD2A8)
+#define TIME ((unsigned long long (*)(void))0x650684)
 #define CLOSE ((void (*)(unsigned int))0x64F1C4)
 #define READ ((void (*)(unsigned int, unsigned int*, unsigned int, unsigned int*))0x64F1E4)
 #define OPEN ((void (*)(const char*, unsigned int, unsigned int*, unsigned int, const void*, unsigned int))0x64F204)
@@ -32,20 +35,22 @@ void dummy() {
             break;
         case STATE_WAIT_REC:
             if(*OLDFRAME == 0 && *FRAME > 0) {
+                SPRINTF(FORMATTED_PATH, REPLAY_PATH, TIME());
                 OPEN(REPLAY_PATH, 0x42, FD, 0, 0, 0);
                 *STATE = STATE_REC;
             }
             break;
         case STATE_WAIT_PLAY:
             if(*OLDFRAME == 0 && *FRAME > 0) {
-                OPEN(REPLAY_PATH, 0x42, FD, 0, 0, 0);
+                SPRINTF(FORMATTED_PATH, REPLAY_PATH, 0);
+                OPEN(FORMATTED_PATH, 0x42, FD, 0, 0, 0);
                 *STATE = STATE_PLAY;
             }
             break;
         case STATE_REC:
             if(*FRAME < *OLDFRAME) {
                 CLOSE(*FD);
-                *STATE = STATE_NONE;
+                *STATE = STATE_WAIT_REC;
             }
             else {
                 WRITE(*FD, INPUTS, 0x564, 0);

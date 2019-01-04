@@ -1,5 +1,5 @@
 # states: 0 = STATE_NONE; 1 = STATE_REC; 2 = STATE_PLAY; 3 = STATE_WAIT_REC; 4 = STATE_WAIT_PLAY
-replay_path:    .string         "/dev_hdd0/game/NPEA00385/USRDIR/replay.rtas"
+replay_path:    .string         "/dev_hdd0/game/NPEA00385/USRDIR/replay%llu.rtas"
 
 entry:
     cmpwi   r28, 4
@@ -48,9 +48,21 @@ cond_activate:
     bne     exit
     addi    r7, r5, -2
     stw     r7, -0x04(r4)
-    lis     r3, 0x4F
-    addi    r3, r3, 0x63C0      # replay_path
-    addi    r5, r4, -0x10       # fd
+    cmpwi   r7, 1               # rec
+    li      r3, 0               # "default" time
+    bne     skip_time
+    bla     0x650684            # sys_time_get_system_time
+    ld      r2, 0x28(r1)        # restore r2
+skip_time:
+    lis     r4, 0x4F
+    mr      r5, r3              # ...
+    lis     r3, 0xB0
+    addi    r4, r4, 0x63C0      # format
+    addi    r3, r3, -0x60       # dst
+    bla     0x5CD2A8            # sprintf
+    lis     r5, 0xB0
+    addi    r3, r5, -0x60       # formatted_path
+    addi    r5, r5, -0x10       # fd
     li      r4, 0x42            # oflags (O_CREAT | O_RDWR)
     li      r6, 0
     li      r7, 0
@@ -90,7 +102,13 @@ close:
     lwz     r3, -0x10(r4)       # load fd
     bla     0x64F1C4            # _sys_fs_cellFsClose
     ld      r2, 0x28(r1)        # restore r2
-    li      r3, 0               
+    lis     r4, 0xB0
+    lwz     r5, -0x04(r4)
+    li      r3, 3
+    cmpwi   r5, 1
+    beq     skip_rec
+    li      r3, 0
+skip_rec:
     stw     r3, -0x04(r4)       # state is now STATE_NONE
 
 exit:
