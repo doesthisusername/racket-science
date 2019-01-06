@@ -9,6 +9,7 @@ Including messy assembly. The C is just for helping me get an overview of my cod
 - Replay input data from `dev_hdd0/game/NPEA00385/USRDIR/replay0.rtas`
 - Prime for recording by pressing L2+R1, then it will continuously record, splitting each load into a different file
 - Prime for replaying by pressing L2+R2, then it will replay from the next load, and end on the next one after that
+- Additionally, hold L1 as you prime for replaying to immediately switch to recording mode once the replay finishes. This modifies the replay!
 - End recording/replaying by pressing L2+L3+R3
 - Not as many crashes as before!
 
